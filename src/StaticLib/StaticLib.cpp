@@ -16,12 +16,21 @@ static unsigned int get_hash(const hash* h, unsigned int key)
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
 	// オープンアドレス法によるハッシュ値を求める
+
 	unsigned int index = hash_func(key, h->max_size);
+	unsigned int step = 1;
 
 	while (h->nodes[index].key != ~0 && h->nodes[index].key != key) 
 	{
-		index = (index + 1) % h->max_size;
+		index = (index + step * step) % h->max_size;
+		step++;
+
+		if (step > h->max_size) 
+		{
+			return ~0;
+		}
 	}
+
 	return index;
 }
 
@@ -65,12 +74,22 @@ bool add(hash* h, unsigned int key, const char* value)
 	}
 
 	unsigned int index = get_hash(h, key);
-
-	if (h->nodes[index].key != ~0 && h->nodes[index].key != key) 
+	if (index == ~0) 
 	{
 		return false;
 	}
 
+	unsigned int original_index = index;
+	unsigned int step = 1;
+	while (h->nodes[index].key != ~0 && h->nodes[index].key != key)
+	{
+		index = (index + step * step) % h->max_size;
+		step++;
+		if (index == original_index)
+		{
+			return false;
+		}
+	}
 
 	if (h->nodes[index].key == ~0) 
 	{
@@ -87,17 +106,16 @@ bool add(hash* h, unsigned int key, const char* value)
 const char* get(const hash* h, unsigned int key)
 {
 	if (h == NULL || h->nodes == NULL || h->max_size == 0) 
-	{
+    {
 		return NULL;
 	}
 
 	unsigned int index = get_hash(h, key);
-
-	if (h->nodes[index].key == key)
+	if (index == ~0 || h->nodes[index].key != key)
 	{
-		return h->nodes[index].value;
+		return NULL;
 	}
-	return NULL;
+	return h->nodes[index].value;
 }
 
 // ハッシュの値を取得する(デバッグ用)
